@@ -50,7 +50,10 @@ def connect_to_server(host, port, nickname, channel, account=None, password=None
 
 # Function to send messages to the channel
 def send_message(irc_socket, message, channel):
+    # Escape colon and newline characters in the message
+    message = message.replace(':', ':%').replace('\n', ' ')
     irc_socket.send(f'PRIVMSG {channel} :{message}\r\n'.encode())
+
 
 # Function to receive and display messages
 def receive_messages(irc_socket, channel, nickname):
@@ -59,13 +62,17 @@ def receive_messages(irc_socket, channel, nickname):
         if message.startswith('PING'):
             irc_socket.send('PONG\r\n'.encode())
         elif 'PRIVMSG' in message:
-            user = message.split('!')[0][1:]
-            msg_content = message.split('PRIVMSG')[1].split(':')[1]
-            timestamp = datetime.now().strftime("%y-%m-%d %H:%M:%S")
-            formatted_message = f'\033[1m{timestamp} {channel} \033[92m<{user}>\033[0m: {msg_content}'
-            if nickname in msg_content:
-                formatted_message = f'\033[1m{timestamp} {channel} \033[91m<{user}>\033[0m: {msg_content}'
-            print(formatted_message)
+            parts = message.split('PRIVMSG')[1].split(':', 1)  # Split message into two parts
+            if len(parts) == 2:
+                user = message.split('!')[0][1:]
+                msg_content = parts[1]  # Content starts after the first colon
+                timestamp = datetime.now().strftime("%y-%m-%d %H:%M:%S")
+                formatted_message = f'\033[1m{timestamp} {channel} \033[92m<{user}>\033[0m: {msg_content}'
+                if nickname in msg_content:
+                    formatted_message = f'\033[1m{timestamp} {channel} \033[91m<{user}>\033[0m: {msg_content}'
+                print(formatted_message)
+            else:
+                print("Error: Malformed message")
 
 # Function to get user input and send messages
 def send_input(irc_socket, channel, nickname):
